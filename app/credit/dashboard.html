@@ -3,144 +3,154 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Taproot · SME Credit Desk</title>
+<title>Taproot · Credit Officer</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
-    --soil: #2b1d14; --root: #7a4a2a; --leaf: #2f6b3a; --leaf-soft: #e3efe2;
-    --sand: #f6f1e8; --card: #ffffff; --ink: #1f1a16; --muted: #6f655c; --line: #e6ddd0;
-    --a: #2f6b3a; --b: #5d8c3a; --c: #c39a2b; --d: #c4702b; --e: #a8432f;
+    --bg: #f6f3ec; --card: #fffdf8; --ink: #1f2a1f; --muted: #6b7266; --line: #e3ddd0;
+    --root: #6b3f1d; --leaf: #2f6b3a; --leaf-soft: #e3efe2; --warn: #b4531b; --warn-soft: #f8e6da;
+    --A: #2f6b3a; --B: #5d8f4a; --C: #c49a2c; --D: #c96f2d; --E: #9b3b2a;
   }
   * { box-sizing: border-box; }
-  body { margin: 0; font-family: Inter, system-ui, sans-serif; background: var(--sand); color: var(--ink); }
-  header { background: var(--soil); color: #f6f1e8; padding: 20px 24px; display: flex; align-items: center; gap: 14px; }
-  header h1 { font-family: Fraunces, serif; font-size: 24px; margin: 0; letter-spacing: .2px; }
-  header p { margin: 0; color: #cdbfae; font-size: 13px; }
-  main { max-width: 1180px; margin: 0 auto; padding: 22px 16px 60px; }
-  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
-  .kpi { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
-  .kpi .v { font-family: Fraunces, serif; font-size: 28px; margin-top: 4px; }
-  .kpi .l { color: var(--muted); font-size: 13px; }
-  .grid { display: grid; grid-template-columns: 1.1fr .9fr; gap: 12px; margin-top: 12px; }
-  @media (max-width: 860px) { .grid { grid-template-columns: 1fr; } }
-  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
-  .card h2 { font-size: 15px; margin: 0 0 12px; }
-  .bands { display: flex; height: 34px; border-radius: 8px; overflow: hidden; }
-  .bands div { display: flex; align-items: center; justify-content: center; color: #fff; font-size: 12px; font-weight: 600; }
-  .legend { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; font-size: 12px; color: var(--muted); }
-  .dot { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 4px; vertical-align: -1px; }
-  .personas { display: flex; flex-wrap: wrap; gap: 8px; }
-  .persona { border: 1px solid var(--line); background: var(--sand); border-radius: 999px; padding: 6px 12px; cursor: pointer; font: inherit; font-size: 13px; }
-  .persona.on { background: var(--leaf); color: #fff; border-color: var(--leaf); }
-  .detail { margin-top: 14px; }
-  .score { display: flex; align-items: baseline; gap: 10px; }
-  .score .n { font-family: Fraunces, serif; font-size: 44px; }
-  .badge { border-radius: 6px; padding: 2px 8px; color: #fff; font-weight: 600; font-size: 13px; }
-  .reasons { list-style: none; padding: 0; margin: 10px 0; font-size: 13px; }
-  .reasons li { padding: 4px 0; border-bottom: 1px dashed var(--line); display: flex; justify-content: space-between; gap: 8px; }
-  .plus { color: var(--a); font-weight: 600; } .minus { color: var(--e); font-weight: 600; }
-  .offer { background: var(--leaf-soft); border-radius: 10px; padding: 12px; margin-top: 10px; font-size: 13px; }
-  .offer b { font-size: 15px; }
-  .voice { margin-top: 10px; font-size: 13px; background: #fbf8f2; border-left: 3px solid var(--root); padding: 10px 12px; border-radius: 0 8px 8px 0; color: #3e342c; }
-  .spark { display: flex; align-items: flex-end; gap: 3px; height: 54px; margin-top: 8px; }
-  .spark div { flex: 1; background: var(--root); border-radius: 2px 2px 0 0; min-height: 2px; opacity: .8; }
-  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 Inter, system-ui, sans-serif; }
+  header { padding: 28px 32px 8px; display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; }
+  h1 { font-family: Fraunces, Georgia, serif; font-size: 30px; margin: 0; color: var(--root); }
+  h1 span { color: var(--leaf); }
+  .sub { color: var(--muted); }
+  main { padding: 16px 32px 48px; display: grid; gap: 20px; }
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; }
+  .kpi .label { color: var(--muted); font-size: 13px; }
+  .kpi .value { font-family: Fraunces, Georgia, serif; font-size: 30px; margin-top: 4px; }
+  .grid2 { display: grid; grid-template-columns: 1.1fr 1fr; gap: 20px; }
+  @media (max-width: 900px) { .grid2 { grid-template-columns: 1fr; } main, header { padding-left: 16px; padding-right: 16px; } }
+  h2 { font-size: 15px; margin: 0 0 14px; font-weight: 600; }
+  .bars .row { display: grid; grid-template-columns: 28px 1fr 48px; align-items: center; gap: 10px; margin: 8px 0; }
+  .bar { height: 22px; border-radius: 6px; }
+  .band { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 7px; color: #fff; font-weight: 600; font-size: 13px; }
+  .personas { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+  .persona { cursor: pointer; text-align: left; border: 1px solid var(--line); background: #fff; border-radius: 10px; padding: 10px 12px; font: inherit; }
+  .persona:hover, .persona.on { border-color: var(--leaf); background: var(--leaf-soft); }
+  .persona b { display: block; }
+  .persona small { color: var(--muted); }
+  #detail { display: none; }
+  .detail-top { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; }
+  .score { font-family: Fraunces, Georgia, serif; font-size: 52px; line-height: 1; }
+  .reasons { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+  @media (max-width: 700px) { .reasons { grid-template-columns: 1fr; } }
+  .reasons ul { margin: 0; padding-left: 0; list-style: none; }
+  .reasons li { padding: 6px 10px; border-radius: 8px; margin-bottom: 6px; display: flex; justify-content: space-between; gap: 10px; }
+  .plus li { background: var(--leaf-soft); }
+  .minus li { background: var(--warn-soft); }
+  .offer { border: 1px dashed var(--leaf); border-radius: 10px; padding: 12px 14px; margin-top: 10px; }
+  .voice { margin-top: 14px; padding: 12px 14px; background: #fbf7ee; border-left: 3px solid var(--root); border-radius: 6px; font-style: italic; }
+  .spark { display: flex; align-items: flex-end; gap: 3px; height: 60px; margin-top: 10px; }
+  .spark div { flex: 1; background: var(--leaf); border-radius: 3px 3px 0 0; min-height: 2px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
   th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--line); }
-  th { color: var(--muted); font-weight: 500; font-size: 12px; }
-  .tablewrap { overflow-x: auto; }
-  select { font: inherit; font-size: 13px; padding: 4px 8px; border-radius: 6px; border: 1px solid var(--line); background: #fff; }
-  .muted { color: var(--muted); font-size: 12px; }
+  th { color: var(--muted); font-weight: 500; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .tablewrap { overflow-x: auto; max-height: 460px; overflow-y: auto; }
+  .filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+  .filters button { border: 1px solid var(--line); background: #fff; border-radius: 999px; padding: 4px 12px; cursor: pointer; font: inherit; font-size: 13px; }
+  .filters button.on { background: var(--ink); color: #fff; border-color: var(--ink); }
+  .note { color: var(--muted); font-size: 12px; }
 </style>
 </head>
 <body>
 <header>
-  <svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><path d="M17 3c-4 4-6 7-6 10a6 6 0 0 0 12 0c0-3-2-6-6-10z" fill="#6fae6a"/><path d="M17 16v16M17 22l-6 6M17 25l5 5M17 20l4-3" stroke="#c7a27a" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
-  <div><h1>Taproot</h1><p>SME credit desk · pre-qualified pipeline from WhatsApp</p></div>
+  <h1>Tap<span>root</span></h1>
+  <div class="sub">Credit officer view · pre-qualified SMEs from WhatsApp · <span class="note">synthetic demo data</span></div>
 </header>
 <main>
   <section class="kpis" id="kpis"></section>
-  <section class="grid">
+
+  <section class="grid2">
+    <div class="card">
+      <h2>Score bands</h2>
+      <div class="bars" id="bands"></div>
+      <p class="note">A–C: approve (C starts small). D: àjọ group loan or credit builder. E: not yet; keep recording.</p>
+    </div>
     <div class="card">
       <h2>Meet the businesses</h2>
       <div class="personas" id="personas"></div>
-      <div class="detail" id="detail"></div>
-    </div>
-    <div class="card">
-      <h2>Portfolio by score band</h2>
-      <div class="bands" id="bands"></div>
-      <div class="legend" id="legend"></div>
-      <h2 style="margin-top:18px">Pre-qualified by business type</h2>
-      <div id="types"></div>
-      <h2 style="margin-top:18px">Top states</h2>
-      <div id="states"></div>
+      <p class="note">Tap a business to see its score, the reasons behind it, and the voice note it receives.</p>
     </div>
   </section>
-  <section class="card" style="margin-top:12px">
-    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
-      <h2 style="margin:0">Pipeline</h2>
-      <label class="muted">Band <select id="filter"><option value="">All</option><option>A</option><option>B</option><option>C</option><option>D</option><option>E</option></select></label>
-    </div>
-    <div class="tablewrap"><table><thead><tr><th>ID</th><th>Type</th><th>State</th><th>Score</th><th>Best offer</th><th>Amount</th><th>Why</th></tr></thead><tbody id="rows"></tbody></table></div>
-    <p class="muted">Synthetic data for demonstration. No real customer records.</p>
+
+  <section class="card" id="detail"></section>
+
+  <section class="card">
+    <h2>Pipeline</h2>
+    <div class="filters" id="filters"></div>
+    <div class="tablewrap"><table>
+      <thead><tr><th>SME</th><th>Type</th><th>State</th><th>Band</th><th class="num">Score</th><th>Best offer</th><th class="num">Amount</th><th>Key reason</th></tr></thead>
+      <tbody id="rows"></tbody>
+    </table></div>
   </section>
 </main>
 <script>
-const COLORS = {A:'var(--a)',B:'var(--b)',C:'var(--c)',D:'var(--d)',E:'var(--e)'};
-const naira = v => '₦' + Math.round(v).toLocaleString('en-NG');
-const big = v => v >= 1e9 ? '₦' + (v/1e9).toFixed(2) + 'bn' : v >= 1e6 ? '₦' + (v/1e6).toFixed(1) + 'm' : naira(v);
-const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-let P;
+const naira = v => "₦" + Math.round(v).toLocaleString("en-NG");
+const short = v => v >= 1e9 ? "₦" + (v/1e9).toFixed(1) + "bn" : v >= 1e6 ? "₦" + (v/1e6).toFixed(1) + "m" : naira(v);
+const bandColor = b => getComputedStyle(document.documentElement).getPropertyValue("--" + b);
+const badge = b => `<span class="band" style="background:${bandColor(b)}">${b}</span>`;
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+let rows = [], filter = "all";
 
 async function load() {
-  P = await (await fetch('/credit/portfolio')).json();
-  document.getElementById('kpis').innerHTML = [
-    ['SMEs assessed', P.total.toLocaleString()],
-    ['Pre-qualified (A–C)', P.pre_qualified + ' · ' + Math.round(100*P.pre_qualified/P.total) + '%'],
-    ['Pipeline value', big(P.pipeline_value)],
-    ['Women-led in pipeline', Math.round(100*P.women_led_share) + '%'],
-  ].map(([l,v]) => `<div class="kpi"><div class="l">${l}</div><div class="v">${v}</div></div>`).join('');
-  document.getElementById('bands').innerHTML = Object.entries(P.bands).filter(([,n])=>n)
-    .map(([b,n]) => `<div style="flex:${n};background:${COLORS[b]}" title="Band ${b}: ${n}">${b}</div>`).join('');
-  document.getElementById('legend').innerHTML = Object.entries(P.bands)
-    .map(([b,n]) => `<span><span class="dot" style="background:${COLORS[b]}"></span>${b}: ${n}</span>`).join('');
-  const bars = obj => { const max = Math.max(...Object.values(obj)); return Object.entries(obj).map(([k,n]) =>
-    `<div style="display:flex;align-items:center;gap:8px;font-size:13px;margin:4px 0"><span style="width:110px">${esc(k)}</span><div style="flex:1;background:var(--sand);border-radius:4px"><div style="width:${100*n/max}%;background:var(--leaf);height:12px;border-radius:4px"></div></div><span class="muted" style="width:28px;text-align:right">${n}</span></div>`).join(''); };
-  document.getElementById('types').innerHTML = bars(P.by_type);
-  document.getElementById('states').innerHTML = bars(P.by_state);
-  rows();
-  const people = await (await fetch('/credit/personas')).json();
-  document.getElementById('personas').innerHTML = people.map(p =>
-    `<button class="persona" data-k="${p.key}">${esc(p.name)} <span class="muted">${p.band}</span></button>`).join('');
-  document.querySelectorAll('.persona').forEach(b => b.onclick = () => show(b.dataset.k));
-  show(people[0].key);
+  const [p, people] = await Promise.all([fetch("/credit/portfolio").then(r => r.json()), fetch("/credit/personas").then(r => r.json())]);
+  rows = p.rows;
+  document.getElementById("kpis").innerHTML = [
+    ["Businesses scored", p.total.toLocaleString()],
+    ["Pre-qualified (A–C)", `${p.pre_qualified} <small class="note">(${Math.round(p.pre_qualified / p.total * 100)}%)</small>`],
+    ["Pipeline value", short(p.pipeline_value)],
+    ["Women-led, pre-qualified", Math.round(p.women_led_share * 100) + "%"],
+  ].map(([l, v]) => `<div class="card kpi"><div class="label">${l}</div><div class="value">${v}</div></div>`).join("");
+  const max = Math.max(...Object.values(p.bands));
+  document.getElementById("bands").innerHTML = Object.entries(p.bands).map(([b, n]) =>
+    `<div class="row">${badge(b)}<div class="bar" style="width:${n / max * 100}%;background:${bandColor(b)}"></div><div class="num">${n}</div></div>`).join("");
+  document.getElementById("personas").innerHTML = people.map(x =>
+    `<button class="persona" data-k="${x.key}"><b>${esc(x.name)} ${badge(x.band)}</b><small>${esc(x.about)}</small></button>`).join("");
+  document.querySelectorAll(".persona").forEach(b => b.onclick = () => showPersona(b.dataset.k));
+  document.getElementById("filters").innerHTML = ["all", "A", "B", "C", "D", "E", "farmer", "trader", "manufacturer"]
+    .map(f => `<button data-f="${f}" class="${f === filter ? "on" : ""}">${f === "all" ? "All" : f[0].toUpperCase() + f.slice(1)}</button>`).join("");
+  document.querySelectorAll("#filters button").forEach(b => b.onclick = () => { filter = b.dataset.f; load.renderRows(); });
+  load.renderRows();
 }
+load.renderRows = () => {
+  document.querySelectorAll("#filters button").forEach(b => b.classList.toggle("on", b.dataset.f === filter));
+  const shown = rows.filter(r => filter === "all" || r.band === filter || r.type === filter);
+  document.getElementById("rows").innerHTML = shown.slice(0, 200).map(r =>
+    `<tr><td>${r.id}${r.women_led ? ' <small class="note">♀</small>' : ""}</td><td>${r.type}</td><td>${esc(r.state)}</td><td>${badge(r.band)}</td>
+     <td class="num">${r.score}</td><td>${esc(r.offer)}</td><td class="num">${r.amount ? naira(r.amount) : "–"}</td><td>${esc(r.top_reason)}</td></tr>`).join("");
+};
 
-function rows() {
-  const f = document.getElementById('filter').value;
-  document.getElementById('rows').innerHTML = P.rows.filter(r => !f || r.band === f).slice(0, 60).map(r =>
-    `<tr><td>${r.id}</td><td>${r.type}${r.women_led ? ' ♀' : ''}</td><td>${esc(r.state)}</td>
-     <td><span class="badge" style="background:${COLORS[r.band]}">${r.band}</span> ${r.score}</td>
-     <td>${esc(r.offer)}</td><td>${r.amount ? naira(r.amount) : '–'}</td><td class="muted">${esc(r.concern || r.top_reason)}</td></tr>`).join('');
-}
-document.getElementById('filter').onchange = rows;
-
-async function show(key) {
-  document.querySelectorAll('.persona').forEach(b => b.classList.toggle('on', b.dataset.k === key));
-  const d = await (await fetch('/credit/personas/' + key)).json();
-  const max = Math.max(...d.business.monthly_revenue, 1);
-  const o = d.offers[0];
-  document.getElementById('detail').innerHTML = `
-    <div class="muted">${esc(d.about)}</div>
-    <div class="score"><span class="n">${d.score}</span><span class="badge" style="background:${COLORS[d.band]}">Band ${d.band}</span></div>
-    <div class="muted">${esc(d.band_meaning)}</div>
-    <div class="spark" title="Monthly revenue">${d.business.monthly_revenue.map(v => `<div style="height:${100*v/max}%"></div>`).join('')}</div>
-    <div class="muted">Monthly revenue · avg profit ${naira(d.business.avg_monthly_profit)}/month</div>
-    <ul class="reasons">${d.strengths.map(r => `<li><span>${esc(r.text)}</span><span class="plus">+${r.points}</span></li>`).join('')}
-      ${d.concerns.map(r => `<li><span>${esc(r.text)}</span><span class="minus">${r.points}</span></li>`).join('')}</ul>
-    <div class="offer"><b>${esc(o.name)}${o.amount ? ' · ' + naira(o.amount) : ''}</b><br>${esc(o.description)}<br>
-      ${o.amount ? `Repay ${naira(o.repayment)} ${esc(o.repayment_schedule)}. ` : ''}<span class="muted">${esc(o.why)}</span></div>
-    <div class="voice">🎙️ ${esc(d.voice_summary)}</div>`;
+async function showPersona(key) {
+  document.querySelectorAll(".persona").forEach(b => b.classList.toggle("on", b.dataset.k === key));
+  const a = await fetch("/credit/personas/" + key).then(r => r.json());
+  const max = Math.max(...a.business.monthly_revenue, 1);
+  const li = xs => xs.map(r => `<li><span>${esc(r.text)}</span><b>${r.points > 0 ? "+" : ""}${r.points}</b></li>`).join("") || "<li>None</li>";
+  const el = document.getElementById("detail");
+  el.style.display = "block";
+  el.innerHTML = `
+    <div class="detail-top">
+      <div class="score" style="color:${bandColor(a.band)}">${a.score}</div>
+      <div><h2 style="margin:0">${esc(a.name)} · ${esc(a.about)} ${badge(a.band)}</h2>
+        <div class="sub">${esc(a.band_meaning)}</div>
+        <div class="note">${a.business.months_of_records} months of records · avg monthly profit ${naira(a.business.avg_monthly_profit)}${a.margin === null ? "" : ""}</div></div>
+    </div>
+    <div class="note" style="margin-top:14px">Monthly revenue, oldest → newest</div>
+    <div class="spark">${a.business.monthly_revenue.map(v => `<div style="height:${v / max * 100}%" title="${naira(v)}"></div>`).join("")}</div>
+    <div class="reasons">
+      <div><h2>What helped</h2><ul class="plus">${li(a.strengths)}</ul></div>
+      <div><h2>What held it back</h2><ul class="minus">${li(a.concerns)}</ul></div>
+    </div>
+    <h2 style="margin-top:16px">Matched financing</h2>
+    ${a.offers.map(o => `<div class="offer"><b>${esc(o.name)}</b>${o.amount ? ` · up to ${naira(o.amount)} · repay ${naira(o.repayment)} ${esc(o.repayment_schedule)}` : ""}<div class="note">${esc(o.description)} ${esc(o.why)}</div></div>`).join("")}
+    ${a.support_programmes.length ? `<p class="note">Also eligible: ${a.support_programmes.map(esc).join(", ")}</p>` : ""}
+    <div class="voice">🎙️ Voice note sent on WhatsApp (in the owner's language): “${esc(a.voice_summary)}”</div>`;
+  el.scrollIntoView({behavior: "smooth", block: "start"});
 }
 load();
 </script>

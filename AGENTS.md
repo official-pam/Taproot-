@@ -1,5 +1,7 @@
 # AGENTS.md
 
+Taproot adds explainable SME credit scoring and loan matching (`app/credit/`) on top of the AjaTrade voice engine. Keep credit maths pure and tested; never use gender or other protected traits as scoring inputs.
+
 AjaTrade is a WhatsApp-based, voice-first AI assistant for Nigerian farmers,
 informal traders and small manufacturers. It gives advice in Hausa, Yoruba,
 Igbo and Nigerian Pidgin (plus English), with no app download. It is built

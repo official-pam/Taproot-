@@ -15,3 +15,6 @@ __pycache__/
 *.sqlite
 # Exported validation evidence (contains user messages)
 validation/
+
+# Crash/replay logs
+replay_pid*.log

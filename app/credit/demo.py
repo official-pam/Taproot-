@@ -147,6 +147,21 @@ def portfolio(n: int = 300, seed: int = 42) -> list[dict]:
         for e in entries:
             e.amount *= scale
             e.profit *= scale
+        # Vary the record length, drop some sales, add some below-cost ones.
+        keep_months = rng.randint(2, 18)
+        cutoff = datetime(TODAY.year, TODAY.month, 1, tzinfo=LAGOS) - timedelta(days=30 * keep_months)
+        drop = rng.uniform(0, 0.5)
+        entries = [e for e in entries if e.created_at >= cutoff and rng.random() > drop]
+        if rng.random() < 0.3:
+            for e in entries:
+                if e.kind == "sale" and rng.random() < 0.3:
+                    e.profit = -abs(e.profit) * Decimal("0.3")
+        alt.months_in_business = rng.randint(6, 120)
+        if alt.ajo_expected and rng.random() < 0.4:
+            alt.ajo_contributions = alt.ajo_contributions[: int(len(alt.ajo_contributions) * rng.uniform(0.5, 1))]
+        if alt.bills_total:
+            alt.bills_on_time = round(alt.bills_total * rng.uniform(0.4, 1))
+        alt.advice_sessions = rng.randint(0, 12)
         if rng.random() < 0.25:
             alt.existing_monthly_debt = Decimal(rng.randrange(0, 120000, 5000))
         out.append({"id": f"SME-{1000 + i}", "state": rng.choice(STATES), "entries": entries, "alt": alt})

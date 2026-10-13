@@ -1,57 +1,57 @@
-# Taproot 🌱
+# Taproot
 
 **Credit rooted in how Nigerian SMEs really do business.**
 
-Taproot is a voice-first AI platform on WhatsApp that turns a small business's everyday records into a fair, explainable credit score. It then matches the business to the right financing. It works in Yoruba, Hausa, Igbo, Pidgin and English, with no app, forms or English needed.
-
-> A taproot is the deep root that reaches water in the dry season. It's the part you can't see that keeps the plant alive. Banks only see the surface: collateral, paperwork and statements. Taproot reaches beneath it.
+Taproot is a voice-first AI platform on WhatsApp that turns a small business's everyday records into fair, explainable credit. It reads sales, restocks, àjọ/esusu contributions, bill payments and mobile-money inflows (all shared with consent), then scores the business and matches it to financing it can actually repay. Owners speak in Yoruba, Hausa, Igbo, Pidgin or English and get answers back as voice notes. They don't need an app, forms or English.
 
 Built for **Zenith Bank Zecathon 6.0, Track 3: Smart SME Financing and Growth Platform.**
 
-## The problem
+> A taproot is the deep root that reaches water in the dry season: the part you can't see that keeps the plant alive. Banks only see the surface (collateral, paperwork, statements). Taproot reaches down to the proof that's already there.
 
-Hauwa farms maize outside Zaria. When the rains come, she has about two weeks to plant and fertilize. The bank wanted collateral, statements and forms in English. By the time she gave up, the planting window had closed. She borrowed from a moneylender, bought half the fertilizer she needed and harvested half the maize she could have.
+## Why
 
-Hauwa isn't a credit risk. She's invisible to the bank. Her proof sits in her sales book, her àjọ contributions and her mobile-money transfers.
+Hauwa farms maize outside Zaria. When the rains come she has about two weeks to plant and fertilize. The bank wanted collateral, statements and English forms. By the time she gave up, the window had closed. She isn't a credit risk; she's invisible to the system. Taproot makes her visible, and gets her the money before the rain does.
 
-## How it works
+## What's in this repo
 
-```
- WhatsApp voice note (5 languages)
-        │  N-ATLAS speech recognition + understanding
-        ▼
- ┌──────────────┐   ┌──────────────┐   ┌──────────────┐   ┌──────────────┐
- │ 1 Discovery  │──▶│ 2 Scoring    │──▶│ 3 Matching   │──▶│ 4 Growth     │
- │ sales book,  │   │ explainable  │   │ right product│   │ buyers, tips,│
- │ àjọ, bills,  │   │ 300–850 score│   │ sized to real│   │ advice that  │
- │ mobile money │   │ + reasons    │   │ cash flow    │   │ protects loan│
- └──────────────┘   └──────────────┘   └──────────────┘   └──────────────┘
-        │                                      │
-        ▼                                      ▼
- Voice-note reply in the owner's language   Bank dashboard: pre-qualified pipeline
-```
+| Part | Where | Status |
+| --- | --- | --- |
+| WhatsApp bot, voice notes, onboarding with consent, 5 languages (N-ATLAS) | `app/services`, `app/onboarding`, `app/voice`, `natlas_server/` | Live (inherited from AjaTrade) |
+| Sales book: sales, restocks, profit, stock, "record for a loan" PDF | `app/trade/` | Live |
+| Farm advice: crop diagnosis, soil, fertilizer, irrigation | `app/agri/`, `app/services/advisor/` | Live |
+| **Credit features** from ledger + alternative data | `app/credit/features.py` | New |
+| **Explainable scorecard** (300–850, bands A–E, plain-language reasons) | `app/credit/scoring.py` | New |
+| **Product matching and loan sizing** by affordability | `app/credit/matching.py` | New |
+| **Credit API and bank officer dashboard** | `app/api/routes/credit.py`, `app/credit/dashboard.html` | New |
+| Synthetic personas and a 300-SME demo portfolio | `app/credit/demo.py` | New |
 
-1. **Discovery.** Traders already keep their sales book by voice through the bot (`app/trade/`). With consent, Taproot adds àjọ/esusu contributions, bill payments and mobile-money inflows (`app/credit/features.py`).
-2. **Scoring.** A transparent points scorecard. Every point has a plain-language reason that can be read out in a voice note. It's **season-aware**, so a farmer's quiet dry-season months aren't treated as instability (`app/credit/scoring.py`).
-3. **Matching.** Seasonal input loans (repaid once after harvest), stock finance, equipment finance, working capital, àjọ group loans and a credit builder. Monthly repayments are capped at 30% of average profit (`app/credit/matching.py`).
-4. **Growth.** The existing farm and trade advisor keeps the business healthy, which protects repayment.
+### How a decision is made
 
-**Fairness:** gender, ethnicity, religion and age are never scoring inputs. "Women-led" is self-declared and used only to route businesses to support programmes. A test checks that it can't change a score.
+1. **Features** (`build_features`): months of records, average revenue and profit, margin, consistency, growth, restocking, àjọ discipline, bills, existing debt. Consistency is **season-aware for farmers**: a quiet dry season isn't treated as a red flag.
+2. **Score** (`score`): each factor adds or removes points and leaves a reason a credit officer can read and an owner can hear. A thin file (under 3 months) is capped at band D, so it can reach an àjọ group loan or credit builder but nothing bigger.
+3. **Match** (`match`): picks the best product for the business type and band. Monthly repayments across all lenders stay within 30% of average monthly profit. Seasonal input loans are repaid once from half of expected harvest profit.
+4. **Voice summary** (`voice_summary`): a short reply translated and spoken by the existing N-ATLAS pipeline.
 
-## Run the demo (no database or API keys needed)
+**Fairness:** gender, religion, ethnicity, state and age are never scoring inputs. `women_led` is self-declared and used only to route businesses to support programmes. A test checks that it never changes the score.
+
+## Run the demo (no database or WhatsApp needed)
 
 ```bash
 pip install -r requirements.txt
-uvicorn demo_main:app --port 8001
+uvicorn demo_main:app --reload --port 8001
 ```
 
-- Bank dashboard: http://localhost:8001/dashboard
-- API docs: http://localhost:8001/docs
-- Try `GET /credit/personas/hauwa` or `POST /credit/assess`
+Open http://localhost:8001/dashboard for the bank view, or http://localhost:8001/docs for the API.
 
-Demo personas (synthetic): **Hauwa** (maize farmer, Zaria), **Ngozi** (fabric trader, Onitsha), **Tunde** (garri processor, Abeokuta), **Bisi** (tomato seller, Mile 12, new with a thin file but strong àjọ), and **Musa** (struggling phone-accessories trader).
+| Endpoint | What it does |
+| --- | --- |
+| `POST /credit/assess` | Score any business from its records and alternative data |
+| `GET /credit/personas` | The five demo businesses (Hauwa, Ngozi, Tunde, Bisi, Musa) |
+| `GET /credit/personas/{key}` | Full assessment plus the voice note it would receive |
+| `GET /credit/portfolio` | Bank pipeline: bands, pre-qualified value, women-led share |
+| `GET /dashboard` | Credit officer dashboard |
 
-## Run the full WhatsApp bot
+## Run the full bot
 
 ```bash
 pip install -r requirements.txt
@@ -60,21 +60,19 @@ uvicorn main:app --reload --port 8000
 pytest
 ```
 
-Environment variables are listed in `SPEC.md` section 1. The N-ATLAS server setup is in `natlas_server/README.md`.
+Environment variables are listed in `SPEC.md` section 1; the N-ATLAS server setup is in `natlas_server/README.md`. The credit routes are mounted in the full app too.
 
-## Repo layout
+## Hackathon roadmap
 
-| Path | What it is |
-| --- | --- |
-| `app/credit/` | **Taproot credit engine:** features, scorecard, matching, demo data, dashboard, tests |
-| `app/api/routes/credit.py` | Credit API and dashboard routes |
-| `demo_main.py` | Stand-alone demo server |
-| `app/trade/` | Voice sales book for traders (the main data source) |
-| `app/services/`, `app/onboarding/`, `app/voice/` | WhatsApp, N-ATLAS voice pipeline, onboarding with consent |
-| `app/agri/` | Farm advice calculators |
-| `natlas_server/` | GPU server for N-ATLAS and ASR models |
-| `docs/TAPROOT.md` | Product notes and hackathon roadmap |
+- [ ] WhatsApp flow: "Check my loan" menu row → `assess()` on the user's ledger → voice summary → YES to apply
+- [ ] Consented data connectors: open banking statements, POS history, mobile money
+- [ ] GenAI receipt and sales-book photo reading into ledger entries
+- [ ] Àjọ group onboarding (group admin confirms members' contributions)
+- [ ] Buyer and off-taker matching (growth agent)
+- [ ] Recalibrate scorecard weights on pilot repayment outcomes; add a gradient-boosted challenger model with SHAP explanations
 
-## Built on
+Product names, rates and limits in `app/credit/matching.py` are illustrative placeholders, to be replaced with the partner bank's real products. All demo data is synthetic.
 
-Taproot grows out of **AjaTrade**, our live voice-first WhatsApp assistant for farmers and traders. Language understanding and speech recognition run on **N-ATLAS**, Nigeria's open multilingual model (NCAIR / Awarri).
+## Credits
+
+Built on the AjaTrade voice engine. Language understanding, translation and speech recognition run on **N-ATLAS**, Nigeria's open multilingual model (NCAIR / Awarri).
