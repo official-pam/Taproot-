@@ -1,9 +1,11 @@
 """Match a scored business to the right financing product and size the loan.
 
-The catalogue below is illustrative: product names, rates and limits are
-placeholders to be replaced with the partner bank's real products. Loan size
-always comes from what the business can repay out of its own profit, so the
-platform never pushes someone into a loan they can't carry.
+The catalogue below is illustrative: rates and limits are placeholders to be
+replaced with the partner bank's real terms. Each product says which Zenith
+product it would map to (``zenith_product``); confirm current terms with
+Zenith. Loan size always comes from what the business can repay out of its
+own profit, and the output is an indicative band for the loan officer, not
+an approval.
 """
 
 from __future__ import annotations
@@ -32,27 +34,34 @@ class Product:
     max_amount: Decimal
     seasonal: bool = False  # one repayment after harvest
     description: str = ""
+    zenith_product: str = ""  # the Zenith product the record would be referred to
 
 
 CATALOGUE: tuple[Product, ...] = (
     Product("SEASON", "Seasonal input loan", ("farmer",), ("A", "B", "C"),
             Decimal("0.025"), 6, Decimal("50000"), Decimal("3000000"), seasonal=True,
-            description="Seeds, fertilizer and labour before planting; repay once after harvest."),
+            description="Seeds, fertilizer and labour before planting; repay once after harvest.",
+            zenith_product="Zenith Small Business Loan (agric); check CBN-backed schemes"),
     Product("STOCK", "Stock finance", ("trader",), ("A", "B", "C"),
             Decimal("0.03"), 6, Decimal("50000"), Decimal("5000000"),
-            description="Buy more stock at better prices; repay monthly from sales."),
+            description="Buy more stock at better prices; repay monthly from sales.",
+            zenith_product="Zenith Small Business Loan"),
     Product("ASSET", "Equipment finance", ("manufacturer", "farmer"), ("A", "B"),
             Decimal("0.022"), 12, Decimal("200000"), Decimal("10000000"),
-            description="Machines, solar, cold storage or processing equipment."),
+            description="Machines, solar, cold storage or processing equipment.",
+            zenith_product="Zenith Small Business Loan (asset)"),
     Product("WCAP", "Working capital loan", ("trader", "manufacturer", "farmer"), ("A", "B", "C"),
             Decimal("0.03"), 6, Decimal("50000"), Decimal("5000000"),
-            description="Flexible cash for day-to-day running costs."),
+            description="Flexible cash for day-to-day running costs.",
+            zenith_product="Zenith Small Business Loan"),
     Product("GROUP", "Àjọ group loan", ("trader", "manufacturer", "farmer"), ("C", "D"),
             Decimal("0.025"), 4, Decimal("20000"), Decimal("300000"),
-            description="Small loan backed by the member's savings group; grows with each repayment."),
+            description="Small loan backed by the member's savings group; grows with each repayment.",
+            zenith_product="Group lending pilot (proposed)"),
     Product("BUILDER", "Credit builder savings", ("trader", "manufacturer", "farmer"), ("D", "E"),
             Decimal("0"), 3, Decimal("0"), Decimal("0"),
-            description="Save a little each week; after 3 months of records, a first loan unlocks."),
+            description="Save a little each week; after 3 months of records, a first loan unlocks.",
+            zenith_product="Zenith savings account"),
 )
 
 
@@ -109,3 +118,29 @@ def match(f: Features, s: Score, existing_debt: Decimal = Decimal("0")) -> list[
     if not offers:
         offers.append(size(CATALOGUE[-1], f))  # credit builder
     return offers
+
+
+# Indicative loan-size bands shown to the officer instead of an exact amount.
+LOAN_BANDS: tuple[tuple[int, int], ...] = (
+    (20_000, 50_000), (50_000, 150_000), (150_000, 500_000),
+    (500_000, 1_500_000), (1_500_000, 5_000_000), (5_000_000, 10_000_000),
+)
+# How much of the computed amount we stand behind at each trust level.
+TRUST_FACTOR = {"high": Decimal("1"), "medium": Decimal("0.75"), "low": Decimal("0.5")}
+
+
+def indicative_band(amount: Decimal, trust_level: str = "medium") -> tuple[int, int] | None:
+    """The loan-size band a record supports, discounted by data trust."""
+    adjusted = amount * TRUST_FACTOR.get(trust_level, Decimal("0.5"))
+    best = None
+    for low, high in LOAN_BANDS:
+        if adjusted >= low:
+            best = (low, high)
+    return best
+
+
+def women_led_note(women_led: bool | None) -> str | None:
+    """Self-declared women-led businesses are also pointed to Zenith's women's offer."""
+    if women_led:
+        return "Also eligible to apply: Z-Woman (Zenith's offer for women-owned businesses; confirm current terms)"
+    return None

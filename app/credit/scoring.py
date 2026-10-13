@@ -19,17 +19,19 @@ from dataclasses import dataclass, field
 from decimal import Decimal
 
 from app.credit.features import Features
+from app.credit.trust import Trust
 
 BASE = 450
 MIN_SCORE, MAX_SCORE = 300, 850
 
 # Score bands: label, minimum score, what it means for the bank
+# Bands are decision support for the bank's loan officer, not decisions.
 BANDS = [
-    ("A", 720, "Strong: approve on standard terms"),
-    ("B", 640, "Good: approve, standard monitoring"),
-    ("C", 560, "Fair: approve a smaller first loan, grow the limit on repayment"),
-    ("D", 480, "Building: credit-builder or group (àjọ) loan first"),
-    ("E", 0, "Not yet: keep recording sales; Taproot will check again"),
+    ("A", 720, "Strong record: refer to loan officer for standard review"),
+    ("B", 640, "Good record: refer to loan officer"),
+    ("C", 560, "Fair record: refer for a smaller first loan"),
+    ("D", 480, "Building: suggest a group (àjọ) loan or credit builder"),
+    ("E", 0, "Not yet: keep logging sales; Taproot will check again"),
 ]
 
 MIN_MONTHS_FOR_SCORE = 3
@@ -64,7 +66,7 @@ def _naira(v: Decimal) -> str:
     return f"₦{v:,.0f}"
 
 
-def score(f: Features) -> Score:
+def score(f: Features, trust: Trust | None = None) -> Score:
     reasons: list[Reason] = []
     tips: list[str] = []
 
@@ -148,7 +150,23 @@ def score(f: Features) -> Score:
         elif f.debt_to_profit > 0.3:
             add("debt", -25, "Existing loan repayments are already significant")
 
-    # 9. Engagement with growth advice
+    # 9. Logging habit and data trust (self-reported records)
+    if trust is not None:
+        if trust.logged_days >= 60 and trust.logging_rate >= 0.6:
+            add("logging", 50, f"Logged sales on {trust.logged_days} days, steadily")
+        elif trust.logged_days >= 30 and trust.logging_rate >= 0.4:
+            add("logging", 25, f"Logged sales on {trust.logged_days} days")
+        elif trust.logged_days < 14:
+            add("logging", -20, f"Only {trust.logged_days} days logged so far")
+            tips.append("Log your sales every day. A steady habit counts for more than one big week.")
+        serious = [x for x in trust.flags if x.severity == "serious"]
+        checks = [x for x in trust.flags if x.severity == "check"]
+        if serious:
+            add("trust", -60, serious[0].text)
+        if checks:
+            add("trust_checks", -min(45, 15 * len(checks)), checks[0].text)
+
+    # 10. Engagement with growth advice
     if f.advice_sessions >= 5:
         add("engagement", 15, "Actively uses business advice")
 

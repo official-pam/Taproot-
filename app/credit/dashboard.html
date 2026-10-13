@@ -56,13 +56,27 @@
   .filters button { border: 1px solid var(--line); background: #fff; border-radius: 999px; padding: 4px 12px; cursor: pointer; font: inherit; font-size: 13px; }
   .filters button.on { background: var(--ink); color: #fff; border-color: var(--ink); }
   .note { color: var(--muted); font-size: 12px; }
+  .banner { margin: 8px 32px 0; padding: 10px 14px; border-radius: 10px; background: var(--warn-soft); color: var(--warn); font-weight: 600; font-size: 13px; }
+  @media (max-width: 900px) { .banner { margin: 8px 16px 0; } }
+  .trust { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+  .trust.high { background: var(--leaf-soft); color: var(--leaf); }
+  .trust.medium { background: #f6edd2; color: #8a6a12; }
+  .trust.low { background: var(--warn-soft); color: var(--warn); }
+  .flag { padding: 6px 10px; border-radius: 8px; margin-bottom: 6px; background: #f3f0e8; }
+  .flag.check { background: #f6edd2; } .flag.serious { background: var(--warn-soft); color: var(--warn); font-weight: 600; }
+  .officer { margin-top: 18px; border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; background: #fff; }
+  .officer dl { display: grid; grid-template-columns: max-content 1fr; gap: 4px 16px; margin: 8px 0 0; font-size: 14px; }
+  .officer dt { color: var(--muted); }
+  .officer dd { margin: 0; }
+  .officer h3 { margin: 0; font-size: 15px; }
 </style>
 </head>
 <body>
 <header>
   <h1>Tap<span>root</span></h1>
-  <div class="sub">Credit officer view · pre-qualified SMEs from WhatsApp · <span class="note">synthetic demo data</span></div>
+  <div class="sub">Loan officer view · traders who keep their sales book on WhatsApp</div>
 </header>
+<div class="banner">SIMULATED DATA. Every business on this page is made up for the demo. Taproot supports the loan officer's decision; it does not approve or decline loans.</div>
 <main>
   <section class="kpis" id="kpis"></section>
 
@@ -70,10 +84,10 @@
     <div class="card">
       <h2>Score bands</h2>
       <div class="bars" id="bands"></div>
-      <p class="note">A–C: approve (C starts small). D: àjọ group loan or credit builder. E: not yet; keep recording.</p>
+      <p class="note">A–C: refer to a loan officer (C for a smaller first loan). D: group loan or credit builder. E: not yet; keep logging.</p>
     </div>
     <div class="card">
-      <h2>Meet the businesses</h2>
+      <h2>Simulated businesses</h2>
       <div class="personas" id="personas"></div>
       <p class="note">Tap a business to see its score, the reasons behind it, and the voice note it receives.</p>
     </div>
@@ -85,7 +99,7 @@
     <h2>Pipeline</h2>
     <div class="filters" id="filters"></div>
     <div class="tablewrap"><table>
-      <thead><tr><th>SME</th><th>Type</th><th>State</th><th>Band</th><th class="num">Score</th><th>Best offer</th><th class="num">Amount</th><th>Key reason</th></tr></thead>
+      <thead><tr><th>SME</th><th>Type</th><th>State</th><th>Band</th><th class="num">Score</th><th>Data trust</th><th>Suggested product</th><th class="num">Indicative band</th><th>Key reason</th></tr></thead>
       <tbody id="rows"></tbody>
     </table></div>
   </section>
@@ -104,16 +118,17 @@ async function load() {
   document.getElementById("kpis").innerHTML = [
     ["Businesses scored", p.total.toLocaleString()],
     ["Pre-qualified (A–C)", `${p.pre_qualified} <small class="note">(${Math.round(p.pre_qualified / p.total * 100)}%)</small>`],
-    ["Pipeline value", short(p.pipeline_value)],
+    ["Indicative pipeline", short(p.pipeline_low) + "–" + short(p.pipeline_high)],
+    ["High-trust records", `${p.trust.high || 0} <small class="note">of ${p.total}</small>`],
     ["Women-led, pre-qualified", Math.round(p.women_led_share * 100) + "%"],
   ].map(([l, v]) => `<div class="card kpi"><div class="label">${l}</div><div class="value">${v}</div></div>`).join("");
   const max = Math.max(...Object.values(p.bands));
   document.getElementById("bands").innerHTML = Object.entries(p.bands).map(([b, n]) =>
     `<div class="row">${badge(b)}<div class="bar" style="width:${n / max * 100}%;background:${bandColor(b)}"></div><div class="num">${n}</div></div>`).join("");
   document.getElementById("personas").innerHTML = people.map(x =>
-    `<button class="persona" data-k="${x.key}"><b>${esc(x.name)} ${badge(x.band)}</b><small>${esc(x.about)}</small></button>`).join("");
+    `<button class="persona" data-k="${x.key}"><b>${esc(x.name)} ${badge(x.band)}</b><small>${esc(x.about)} · trust: ${x.trust}</small></button>`).join("");
   document.querySelectorAll(".persona").forEach(b => b.onclick = () => showPersona(b.dataset.k));
-  document.getElementById("filters").innerHTML = ["all", "A", "B", "C", "D", "E", "farmer", "trader", "manufacturer"]
+  document.getElementById("filters").innerHTML = ["all", "A", "B", "C", "D", "E", "trader", "manufacturer"]
     .map(f => `<button data-f="${f}" class="${f === filter ? "on" : ""}">${f === "all" ? "All" : f[0].toUpperCase() + f.slice(1)}</button>`).join("");
   document.querySelectorAll("#filters button").forEach(b => b.onclick = () => { filter = b.dataset.f; load.renderRows(); });
   load.renderRows();
@@ -123,20 +138,22 @@ load.renderRows = () => {
   const shown = rows.filter(r => filter === "all" || r.band === filter || r.type === filter);
   document.getElementById("rows").innerHTML = shown.slice(0, 200).map(r =>
     `<tr><td>${r.id}${r.women_led ? ' <small class="note">♀</small>' : ""}</td><td>${r.type}</td><td>${esc(r.state)}</td><td>${badge(r.band)}</td>
-     <td class="num">${r.score}</td><td>${esc(r.offer)}</td><td class="num">${r.amount ? naira(r.amount) : "–"}</td><td>${esc(r.top_reason)}</td></tr>`).join("");
+     <td class="num">${r.score}</td><td><span class="trust ${r.trust}">${r.trust}</span>${r.flags ? ` <small class="note">${r.flags} flag${r.flags > 1 ? "s" : ""}</small>` : ""}</td>
+     <td>${esc(r.offer)}</td><td class="num">${r.band_max ? short(r.band_min) + "–" + short(r.band_max) : "–"}</td><td>${esc(r.top_reason)}</td></tr>`).join("");
 };
 
 async function showPersona(key) {
   document.querySelectorAll(".persona").forEach(b => b.classList.toggle("on", b.dataset.k === key));
   const a = await fetch("/credit/personas/" + key).then(r => r.json());
   const max = Math.max(...a.business.monthly_revenue, 1);
+  const o = a.officer_summary;
   const li = xs => xs.map(r => `<li><span>${esc(r.text)}</span><b>${r.points > 0 ? "+" : ""}${r.points}</b></li>`).join("") || "<li>None</li>";
   const el = document.getElementById("detail");
   el.style.display = "block";
   el.innerHTML = `
     <div class="detail-top">
       <div class="score" style="color:${bandColor(a.band)}">${a.score}</div>
-      <div><h2 style="margin:0">${esc(a.name)} · ${esc(a.about)} ${badge(a.band)}</h2>
+      <div><h2 style="margin:0">${esc(a.name)} <small class="note">(simulated)</small> · ${esc(a.about)} ${badge(a.band)}</h2>
         <div class="sub">${esc(a.band_meaning)}</div>
         <div class="note">${a.business.months_of_records} months of records · avg monthly profit ${naira(a.business.avg_monthly_profit)}${a.margin === null ? "" : ""}</div></div>
     </div>
@@ -146,10 +163,24 @@ async function showPersona(key) {
       <div><h2>What helped</h2><ul class="plus">${li(a.strengths)}</ul></div>
       <div><h2>What held it back</h2><ul class="minus">${li(a.concerns)}</ul></div>
     </div>
-    <h2 style="margin-top:16px">Matched financing</h2>
-    ${a.offers.map(o => `<div class="offer"><b>${esc(o.name)}</b>${o.amount ? ` · up to ${naira(o.amount)} · repay ${naira(o.repayment)} ${esc(o.repayment_schedule)}` : ""}<div class="note">${esc(o.description)} ${esc(o.why)}</div></div>`).join("")}
-    ${a.support_programmes.length ? `<p class="note">Also eligible: ${a.support_programmes.map(esc).join(", ")}</p>` : ""}
-    <div class="voice">🎙️ Voice note sent on WhatsApp (in the owner's language): “${esc(a.voice_summary)}”</div>`;
+    <h2 style="margin-top:16px">Data trust <span class="trust ${a.trust.level}">${a.trust.level}</span></h2>
+    <div class="note" style="margin-bottom:8px">${a.trust.logged_days} days logged · logged on ${Math.round(a.trust.logging_rate * 100)}% of days · longest streak ${a.trust.longest_streak} days${a.trust.account_ratio !== null ? ` · logged sales = ${a.trust.account_ratio.toFixed(2)}× Zenith account inflows` : ""}</div>
+    ${a.trust.flags.map(f => `<div class="flag ${f.severity}">${esc(f.text)}</div>`).join("") || '<div class="flag">No flags</div>'}
+    <div class="officer">
+      <h3>What the Zenith loan officer receives · ${esc(o.reference)}</h3>
+      <div class="note">${esc(o.notice || "")} ${esc(o.decision_support_only)}</div>
+      <dl>
+        <dt>Suggested product</dt><dd>${esc(o.suggested_product.taproot)} → <b>${esc(o.suggested_product.zenith_product)}</b></dd>
+        <dt>Indicative band</dt><dd><b>${esc(o.suggested_product.indicative_loan_band)}</b> <small class="note">(${esc(o.suggested_product.sizing_rule)}; discounted for data trust)</small></dd>
+        <dt>Record</dt><dd>${o.record.days_logged} days · avg daily sales ${naira(o.record.avg_daily_revenue)} · avg monthly profit ${naira(o.record.avg_monthly_profit)}${o.record.gross_margin !== null ? ` · margin ${Math.round(o.record.gross_margin * 100)}%` : ""}</dd>
+        <dt>Why</dt><dd>${o.summary.why.map(esc).join("; ") || "–"}</dd>
+        <dt>Watch</dt><dd>${o.summary.watch.map(esc).join("; ") || "–"}</dd>
+        <dt>Consent</dt><dd>${esc(o.consent.status)}${o.consent.partner ? ` · ${esc(o.consent.partner)} · ${esc(o.consent.version)} · by ${esc(o.consent.channel)}` : ""}</dd>
+        <dt>KYC</dt><dd>BVN and NIN ${esc(o.applicant.kyc.bvn)}</dd>
+        ${o.also ? `<dt>Also</dt><dd>${esc(o.also)}</dd>` : ""}
+      </dl>
+    </div>
+    <div class="voice">🎙️ Voice note the trader hears on WhatsApp, in their language, before the consent question: “${esc(a.voice_summary)}”</div>`;
   el.scrollIntoView({behavior: "smooth", block: "start"});
 }
 load();

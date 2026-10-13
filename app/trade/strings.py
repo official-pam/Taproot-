@@ -16,6 +16,15 @@ from app.services.languages import normalize_language
 
 MENU_HINT = "Say menu to see other services."
 
+# Taproot: asking for a loan
+LOAN_SUMMARY = (
+    "I have looked at your sales book. It supports a {product} of about {low} to {high}. "
+    "This is not a loan offer yet. Zenith Bank makes the final decision."
+)
+LOAN_NOT_YET = "Thank you for keeping your sales book. It is not ready for a loan yet."
+LOAN_NOT_YET_TIP = "Keep recording your sales every day and ask me again in a few weeks."
+LOAN_CONSENT_FAILED = "Sorry, I could not save your answer just now. Nothing has been shared. Please try again later."
+
 # ---------------------------------------------------------------------------
 # English replies (translated by the reply pipeline)
 # ---------------------------------------------------------------------------
@@ -94,11 +103,11 @@ HELP_SPOKEN = (
 # ---------------------------------------------------------------------------
 
 _LABELS: dict[str, dict[str, str]] = {
-    "english": {"confirm": "Save this record?", "yes": "Yes, save", "no": "No, cancel", "statement": "AjaTrade sales record"},
-    "hausa": {"confirm": "A ajiye wannan?", "yes": "Eh, ajiye", "no": "A'a, soke", "statement": "Bayanan kasuwancin AjaTrade"},  # REVIEW
-    "yoruba": {"confirm": "Ṣé kí n fi pamọ́?", "yes": "Bẹ́ẹ̀ ni, fi pamọ́", "no": "Rárá, fagilé", "statement": "Àkọsílẹ̀ ọjà AjaTrade"},  # REVIEW
-    "igbo": {"confirm": "Chekwaa ndekọ a?", "yes": "Ee, chekwaa", "no": "Mba, kagbuo", "statement": "Ndekọ ahịa AjaTrade"},  # REVIEW
-    "pidgin": {"confirm": "Make I save am?", "yes": "Yes, save am", "no": "No, cancel", "statement": "AjaTrade sales record"},  # REVIEW
+    "english": {"confirm": "Save this record?", "yes": "Yes, save", "no": "No, cancel", "statement": "Taproot sales record", "share_q": "Share your record with Zenith Bank?", "share_yes": "Yes, share", "share_no": "No, keep private"},
+    "hausa": {"confirm": "A ajiye wannan?", "yes": "Eh, ajiye", "no": "A'a, soke", "statement": "Bayanan kasuwancin Taproot", "share_q": "A raba bayananka da Zenith Bank?", "share_yes": "Eh, a raba", "share_no": "A'a, a ɓoye"},  # REVIEW
+    "yoruba": {"confirm": "Ṣé kí n fi pamọ́?", "yes": "Bẹ́ẹ̀ ni, fi pamọ́", "no": "Rárá, fagilé", "statement": "Àkọsílẹ̀ ọjà Taproot", "share_q": "Ṣé kí n fi àkọsílẹ̀ rẹ han Zenith Bank?", "share_yes": "Bẹ́ẹ̀ ni, fi hàn", "share_no": "Rárá, pa á mọ́"},  # REVIEW
+    "igbo": {"confirm": "Chekwaa ndekọ a?", "yes": "Ee, chekwaa", "no": "Mba, kagbuo", "statement": "Ndekọ ahịa Taproot", "share_q": "Kesaa ndekọ gị na Zenith Bank?", "share_yes": "Ee, kesaa", "share_no": "Mba, debe ya"},  # REVIEW
+    "pidgin": {"confirm": "Make I save am?", "yes": "Yes, save am", "no": "No, cancel", "statement": "Taproot sales record", "share_q": "Make I share your record with Zenith Bank?", "share_yes": "Yes, share am", "share_no": "No, keep am"},  # REVIEW
 }
 
 
@@ -118,6 +127,23 @@ def confirm_buttons(language: str | None) -> dict:
                 "buttons": [
                     {"type": "reply", "reply": {"id": "trade_yes", "title": label("yes", language)}},
                     {"type": "reply", "reply": {"id": "trade_no", "title": label("no", language)}},
+                ]
+            },
+        },
+    }
+
+
+def share_buttons(language: str | None) -> dict:
+    """Yes / No buttons for the loan-sharing consent (separate from onboarding consent)."""
+    return {
+        "type": "interactive",
+        "interactive": {
+            "type": "button",
+            "body": {"text": label("share_q", language)},
+            "action": {
+                "buttons": [
+                    {"type": "reply", "reply": {"id": "loan_share_yes", "title": label("share_yes", language)}},
+                    {"type": "reply", "reply": {"id": "loan_share_no", "title": label("share_no", language)}},
                 ]
             },
         },

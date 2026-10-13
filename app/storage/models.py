@@ -423,3 +423,28 @@ class TradeEntryRow(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
+
+
+class CreditConsentRow(Base):
+    """Consent to share a trader's business record with a lender (Taproot).
+
+    Separate from the onboarding consent (storing chats). One row per grant;
+    revoking sets ``revoked_at`` and never deletes the row, so there is an
+    audit trail of what the trader agreed to, when, in which language and
+    under which wording version.
+    """
+
+    __tablename__ = "credit_consents"
+    __table_args__ = (Index("ix_credit_consents_wa_id", "wa_id"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    wa_id: Mapped[str] = mapped_column(Text, ForeignKey("users.wa_id"), nullable=False)
+    partner: Mapped[str] = mapped_column(Text, nullable=False)
+    purpose: Mapped[str] = mapped_column(Text, nullable=False)
+    version: Mapped[str] = mapped_column(Text, nullable=False)
+    language: Mapped[str | None] = mapped_column(Text, nullable=True)
+    channel: Mapped[str] = mapped_column(Text, nullable=False)  # voice | button | text
+    granted_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

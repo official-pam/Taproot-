@@ -480,8 +480,8 @@ SERVICE_MENU_MESSAGES =  {
 # REVIEW: native speakers to check the Hausa, Igbo, Yoruba and Pidgin rows.
 TRADER_MENU_MESSAGES = {
     "english": {
-      "greeting": "Hello {name}, I am AjaTrade, your sales book. What would you like to do?",
-      "greeting_no_name": "Hello, I am AjaTrade, your sales book. What would you like to do?",
+      "greeting": "Hello {name}, I am Taproot, your sales book. What would you like to do?",
+      "greeting_no_name": "Hello, I am Taproot, your sales book. What would you like to do?",
       "button": "See options",
       "section": "My shop",
       "rows": [
@@ -491,6 +491,7 @@ TRADER_MENU_MESSAGES = {
         ["trade_today", "Today's profit", "Sales, profit and discounts today"],
         ["trade_week", "This week's profit", "Sales and profit since Monday"],
         ["trade_export", "Record for a loan", "Get your sales record as a PDF"],
+        ["trade_loan", "Ask for a loan", "See what your record supports"],
         ["trade_help", "How it works", "What I can do for your shop"],
         ["farm_menu", "Farm services", "Crop problems, soil, fertilizer"],
       ]
@@ -507,6 +508,7 @@ TRADER_MENU_MESSAGES = {
         ["trade_today", "Ribar yau", "Ciniki, riba da rangwame na yau"],
         ["trade_week", "Ribar wannan mako", "Ciniki da riba tun Litinin"],
         ["trade_export", "Bayani don lamuni", "Samu bayanan cinikinka a PDF"],
+        ["trade_loan", "Nemi lamuni", "Ga abin da bayananka ke goyon baya"],
         ["trade_help", "Yadda yake aiki", "Abin da zan iya yi wa shagonka"],
         ["farm_menu", "Ayyukan gona", "Matsalar shuka, ƙasa, taki"],
       ]
@@ -523,6 +525,7 @@ TRADER_MENU_MESSAGES = {
         ["trade_today", "Uru taa", "Ahịa, uru na mbelata taa"],
         ["trade_week", "Uru izu a", "Ahịa na uru kemgbe Mọnde"],
         ["trade_export", "Ndekọ maka mbinye ego", "Nweta ndekọ ahịa gị dịka PDF"],
+        ["trade_loan", "Rịọ mbinye ego", "Hụ ihe ndekọ gị na-akwado"],
         ["trade_help", "Otu o si arụ ọrụ", "Ihe m nwere ike ime maka gị"],
         ["farm_menu", "Ọrụ ugbo", "Nsogbu akụkụ, ala, fatịlaịza"],
       ]
@@ -539,6 +542,7 @@ TRADER_MENU_MESSAGES = {
         ["trade_today", "Today profit", "Sales, profit and discount today"],
         ["trade_week", "This week profit", "Sales and profit since Monday"],
         ["trade_export", "Record for loan", "Collect your sales record as PDF"],
+        ["trade_loan", "Ask for loan", "See wetin your record fit get"],
         ["trade_help", "How e dey work", "Wetin I fit do for your shop"],
         ["farm_menu", "Farm services", "Crop problem, soil, fertilizer"],
       ]
@@ -555,6 +559,7 @@ TRADER_MENU_MESSAGES = {
         ["trade_today", "Èrè t'òní", "Ọjà, èrè àti ẹ̀dínwó t'òní"],
         ["trade_week", "Èrè ọ̀sẹ̀ yìí", "Ọjà àti èrè láti Ọjọ́ Ajé"],
         ["trade_export", "Àkọsílẹ̀ fún owó yíyá", "Gba àkọsílẹ̀ ọjà rẹ ní PDF"],
+        ["trade_loan", "Béèrè owó yíyá", "Wo ohun tí àkọsílẹ̀ rẹ lè gbà"],
         ["trade_help", "Bí ó ṣe ń ṣiṣẹ́", "Ohun tí mo lè ṣe fún ṣọ́ọ̀bù rẹ"],
         ["farm_menu", "Iṣẹ́ oko", "Ìṣòro irúgbìn, ilẹ̀, ajílẹ̀"],
       ]

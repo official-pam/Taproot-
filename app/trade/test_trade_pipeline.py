@@ -140,4 +140,4 @@ def test_statement_is_sent_as_a_document(pipeline):
     asyncio.run(messages.handle_message(_tap("trade_export"), "Tolu"))
     docs = [p for k, p in sent if k == "document"]
     assert docs and docs[0][1] == b"%PDF" and docs[0][0].endswith(".pdf")
-    assert docs[0][2].startswith("AjaTrade sales record (")
+    assert docs[0][2].startswith("Taproot sales record (")

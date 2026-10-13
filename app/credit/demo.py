@@ -16,11 +16,15 @@ from app.trade.ledger import LAGOS, Entry
 TODAY = date(2026, 10, 1)
 
 
+_CLOCK = random.Random(99)  # spreads simulated sales across the trading day
+
+
 def _sale(day: date, name: str, qty: int, price: int, cost: int) -> Entry:
     q, p, c = Decimal(qty), Decimal(price), Decimal(cost)
+    hour, minute = _CLOCK.randint(8, 18), _CLOCK.randint(0, 59)
     return Entry(kind="sale", product_name=name, qty=q, unit_price=p, unit_cost=c, set_price=p,
                  amount=q * p, profit=q * (p - c),
-                 created_at=datetime(day.year, day.month, day.day, 12, tzinfo=LAGOS))
+                 created_at=datetime(day.year, day.month, day.day, hour, minute, tzinfo=LAGOS))
 
 
 def _restock(day: date, name: str, qty: int, cost: int) -> Entry:
@@ -46,38 +50,42 @@ def _ajo(months: int, missed: int = 0, late: int = 0, amount: int = 5000) -> tup
 
 
 def hauwa(rng: random.Random | None = None) -> tuple[list[Entry], AltData]:
-    """Maize farmer near Zaria: two harvest peaks, quiet planting months."""
+    """Grain trader in Zaria market: logs most days, buys big after harvest."""
     rng = rng or random.Random(1)
     entries = []
-    for d in _months_back(14):
-        if d.month in (9, 10, 11):  # main harvest sales
-            for _ in range(rng.randint(4, 7)):
-                entries.append(_sale(d + timedelta(days=rng.randint(0, 25)), "maize (bag)",
-                                     rng.randint(5, 12), 52000, 30000))
-        elif d.month in (1, 2, 3):  # stored grain sold as price rises
-            for _ in range(rng.randint(1, 3)):
-                entries.append(_sale(d + timedelta(days=rng.randint(0, 25)), "maize (bag)",
-                                     rng.randint(3, 6), 60000, 30000))
-        if d.month in (5, 6):
-            entries.append(_restock(d, "fertilizer (bag)", 6, 38000))
-    ajo, expected = _ajo(12, missed=1)
-    return entries, AltData(business_type="farmer", months_in_business=96, ajo_contributions=ajo,
-                            ajo_expected=expected, bills_on_time=11, bills_total=12,
+    day = TODAY - timedelta(days=300)
+    while day < TODAY:
+        if day.month in (10, 11) and day.day in (2, 16):
+            entries.append(_restock(day, "maize (bag)", 40, 30000))
+        if rng.random() < 0.8:  # logs about 4 days in 5
+            busy = 2 if day.month in (2, 3, 4, 5, 6, 7) else 1  # prices rise in the lean season
+            for _ in range(rng.randint(1, 2) * busy):
+                price = 52000 if day.month in (10, 11, 12, 1) else 60000
+                entries.append(_sale(day, "maize (bag)", rng.randint(1, 3), price, 41000))
+        day += timedelta(days=1)
+    ajo, expected = _ajo(10, missed=1)
+    return entries, AltData(business_type="trader", months_in_business=96, ajo_contributions=ajo,
+                            ajo_expected=expected, bills_on_time=9, bills_total=10,
                             advice_sessions=9, women_led=True)
 
 
 def ngozi(rng: random.Random | None = None) -> tuple[list[Entry], AltData]:
-    """Fabric trader in Onitsha: steady, growing."""
+    """Fabric trader in Onitsha: logs almost every day, steady and growing."""
     rng = rng or random.Random(2)
     entries = []
-    for i, d in enumerate(_months_back(12)):
-        entries.append(_restock(d, "ankara (6 yards)", 40, 9000))
-        for _ in range(rng.randint(14, 20) + i):
-            entries.append(_sale(d + timedelta(days=rng.randint(0, 27)), "ankara (6 yards)",
-                                 rng.randint(1, 3), 12500, 9000))
-    ajo, expected = _ajo(12)
+    day = TODAY - timedelta(days=270)
+    i = 0
+    while day < TODAY:
+        if day.day == 1:
+            entries.append(_restock(day, "ankara (6 yards)", 40, 9000))
+        if rng.random() < 0.9:
+            for _ in range(rng.randint(1, 2) + (i > 150)):
+                entries.append(_sale(day, "ankara (6 yards)", rng.randint(1, 2), 12500, 9000))
+        day += timedelta(days=1)
+        i += 1
+    ajo, expected = _ajo(9)
     return entries, AltData(business_type="trader", months_in_business=60, ajo_contributions=ajo,
-                            ajo_expected=expected, bills_on_time=12, bills_total=12,
+                            ajo_expected=expected, bills_on_time=9, bills_total=9,
                             advice_sessions=6, women_led=True)
 
 
@@ -122,13 +130,27 @@ def musa(rng: random.Random | None = None) -> tuple[list[Entry], AltData]:
                             existing_monthly_debt=Decimal("60000"), women_led=False)
 
 
+# Simulated personas. Names and stories are illustrative, not real customers.
 PERSONAS = {
-    "hauwa": ("Hauwa", "Maize farmer, Zaria (Kaduna)", hauwa),
+    "hauwa": ("Hauwa", "Grain trader, Zaria (Kaduna)", hauwa),
     "ngozi": ("Ngozi", "Fabric trader, Onitsha (Anambra)", ngozi),
     "tunde": ("Tunde", "Garri processor, Abeokuta (Ogun)", tunde),
     "bisi": ("Bisi", "Tomato seller, Mile 12 (Lagos)", bisi),
     "musa": ("Musa", "Phone accessories, Kano", musa),
 }
+
+# Money seen going into each persona's Zenith account over the same period,
+# as a share of what they logged. Musa logged far more than his account shows.
+ACCOUNT_MATCH = {"hauwa": Decimal("0.9"), "ngozi": Decimal("0.95"), "tunde": Decimal("1.0"),
+                 "bisi": None, "musa": Decimal("0.4")}
+
+
+def account_inflows(key: str, entries: list[Entry]) -> Decimal | None:
+    share = ACCOUNT_MATCH.get(key)
+    if share is None:
+        return None
+    logged = sum((e.amount for e in entries if e.kind == "sale"), Decimal("0"))
+    return (logged * share).quantize(Decimal("1"))
 
 STATES = ["Lagos", "Kano", "Kaduna", "Oyo", "Ogun", "Anambra", "Rivers", "Benue", "Plateau",
           "Enugu", "Abuja (FCT)", "Niger", "Kwara", "Delta", "Katsina"]
@@ -164,5 +186,9 @@ def portfolio(n: int = 300, seed: int = 42) -> list[dict]:
         alt.advice_sessions = rng.randint(0, 12)
         if rng.random() < 0.25:
             alt.existing_monthly_debt = Decimal(rng.randrange(0, 120000, 5000))
-        out.append({"id": f"SME-{1000 + i}", "state": rng.choice(STATES), "entries": entries, "alt": alt})
+        logged = sum((e.amount for e in entries if e.kind == "sale"), Decimal("0"))
+        r = rng.random()
+        inflows = None if r < 0.3 else (logged * Decimal(str(round(rng.uniform(0.3, 0.6) if r > 0.9 else rng.uniform(0.75, 1.1), 2)))).quantize(Decimal("1"))
+        out.append({"id": f"SME-{1000 + i}", "state": rng.choice(STATES), "entries": entries, "alt": alt,
+                    "account_inflows": inflows})
     return out

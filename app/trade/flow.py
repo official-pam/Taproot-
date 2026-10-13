@@ -40,6 +40,9 @@ CHOICES = (
     "trade_today",
     "trade_week",
     "trade_export",
+    "trade_loan",
+    "loan_share_yes",
+    "loan_share_no",
     "trade_help",
     "trade_yes",
     "trade_no",
@@ -78,6 +81,8 @@ def looks_like_trade(text: str, user: User | None) -> bool:
     everyone. Traders also get "today's profit", "add 10 bags ...", etc. A
     farmer's "I sold 5 bags of maize at 30,000" is a sale too.
     """
+    if is_trader(user) and (_is_loan_request(text) or _is_stop_sharing(text)):
+        return True
     kind = parse.detect_kind(text)
     if kind is None:
         return False
@@ -179,6 +184,10 @@ async def handle_choice(user: User, choice_id: str) -> Any:
         return await _summary(user, "week")
     if choice_id == "trade_export":
         return await _export(user)
+    if choice_id == "trade_loan":
+        return await _loan(user)
+    if choice_id in ("loan_share_yes", "loan_share_no"):
+        return await _loan_share(user, choice_id == "loan_share_yes", channel="button")
     return _help()
 
 
@@ -186,6 +195,10 @@ async def start(user: User, english_text: str) -> Any:
     """A ledger message with no open trade flow."""
     if not _consented(user):
         return _reply(messages=[_text(strings.NEED_CONSENT)], english_text=strings.NEED_CONSENT)
+    if _is_stop_sharing(english_text):
+        return await _stop_sharing(user)
+    if _is_loan_request(english_text):
+        return await _loan(user)
     action = await parse.read_action(english_text)
     return await _dispatch(user, action, english_text)
 
@@ -202,6 +215,17 @@ async def continue_flow(user: User, english_text: str) -> Any | None:
     awaiting = state.get("awaiting")
     text = (english_text or "").strip()
     pending = Action.from_json(state.get("pending")) if state.get("pending") else None
+
+    if _is_stop_sharing(text):
+        return await _stop_sharing(user)
+    if awaiting == "loan_share":
+        if parse.is_yes(text):
+            return await _loan_share(user, True, channel="voice")
+        if parse.is_no(text):
+            return await _loan_share(user, False, channel="voice")
+        _end(user)
+        await _save(user)
+        return None
 
     if awaiting == "confirm":
         if parse.is_yes(text):
@@ -772,6 +796,103 @@ async def _export(user: User) -> Any:
         },
     }
     return _reply(messages=[_text(strings.EXPORT_SPOKEN), document], english_text=strings.EXPORT_SPOKEN)
+
+
+# ---------------------------------------------------------------------------
+# Taproot: ask for a loan (record summary, then a separate sharing consent)
+# ---------------------------------------------------------------------------
+
+_LOAN_WORDS = ("loan", "borrow", "credit")
+
+
+def _is_loan_request(text: str | None) -> bool:
+    t = (text or "").lower()
+    return any(w in t for w in _LOAN_WORDS) and not money.find_numbers(t)
+
+
+def _is_stop_sharing(text: str | None) -> bool:
+    from app.credit import consent
+
+    t = (text or "").lower()
+    return any(p in t for p in consent.STOP_PHRASES)
+
+
+async def _loan(user: User) -> Any:
+    """Summarise what the sales book supports, then ask the loan-sharing consent."""
+    from app.credit import consent
+    from app.credit.features import AltData
+    from app.credit.service import assess
+
+    _end(user)
+    try:
+        entries = await storage.trade_entries(user.phone)
+    except Exception as error:  # noqa: BLE001
+        logger.warning("Could not load ledger for loan check %s: %s", mask_phone(user.phone), error)
+        await _save(user)
+        return _reply(messages=[_text(strings.EXPORT_FAILED)], english_text=strings.EXPORT_FAILED)
+    role = (getattr(user, "role", None) or "trader").lower()
+    a = assess(entries, AltData(business_type=role if role in ("trader", "manufacturer", "farmer") else "trader"))
+    name = getattr(user, "preferred_name", None) or getattr(user, "name", None)
+
+    if a.band is None:
+        tip = a.score.tips[0] if a.score.tips else strings.LOAN_NOT_YET_TIP
+        spoken = f"{strings.LOAN_NOT_YET} {tip}"
+        await _save(user)
+        return _reply(messages=[_text(spoken)], english_text=spoken)
+
+    best = a.offers[0]
+    spoken = strings.LOAN_SUMMARY.format(product=best.product.name.lower(),
+                                         low=money.spoken_naira(a.band[0]), high=money.spoken_naira(a.band[1]))
+    card = [
+        f"Days logged: {a.trust.logged_days}",
+        f"Average profit a month: {money.naira(a.features.avg_monthly_profit)}",
+        f"Suggested: {best.product.name}",
+        f"Your record supports about {money.naira(a.band[0])} – {money.naira(a.band[1])}",
+        "Zenith Bank makes the final decision.",
+    ]
+    user.flow = FLOW
+    user.flow_data = {"awaiting": "loan_share", "asks": 0}
+    await _save(user)
+    return _reply(
+        messages=[_text(spoken), _card("\n".join(card)), _text(consent.ASK), _card(consent.ASK_CARD),
+                  strings.share_buttons(user.language)],
+        english_text=f"{spoken} {consent.ASK}",
+    )
+
+
+async def _loan_share(user: User, agreed: bool, *, channel: str) -> Any:
+    from app.credit import consent
+
+    awaiting = _state(user).get("awaiting")
+    _end(user)
+    await _save(user)
+    if awaiting != "loan_share" and channel != "button":
+        return None
+    if not agreed:
+        return _reply(messages=[_text(consent.DECLINED)], english_text=consent.DECLINED)
+    try:
+        await storage.credit_consent_grant(
+            user.phone, partner=consent.PARTNER, purpose=consent.PURPOSE, version=consent.VERSION,
+            language=user.language, channel=channel,
+        )
+    except Exception as error:  # noqa: BLE001
+        logger.warning("Could not record loan consent for %s: %s", mask_phone(user.phone), error)
+        return _reply(messages=[_text(strings.LOAN_CONSENT_FAILED)], english_text=strings.LOAN_CONSENT_FAILED)
+    return _reply(messages=[_text(consent.GRANTED)], english_text=consent.GRANTED)
+
+
+async def _stop_sharing(user: User) -> Any:
+    from app.credit import consent
+
+    _end(user)
+    await _save(user)
+    try:
+        revoked = await storage.credit_consent_revoke(user.phone, consent.PARTNER)
+    except Exception as error:  # noqa: BLE001
+        logger.warning("Could not revoke loan consent for %s: %s", mask_phone(user.phone), error)
+        return _reply(messages=[_text(strings.LOAN_CONSENT_FAILED)], english_text=strings.LOAN_CONSENT_FAILED)
+    msg = consent.REVOKED if revoked else consent.NOTHING_TO_REVOKE
+    return _reply(messages=[_text(msg)], english_text=msg)
 
 
 def _help() -> Any:

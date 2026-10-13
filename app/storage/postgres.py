@@ -35,6 +35,7 @@ from app.schemas.memory import User
 from app.storage.models import (
     Base,
     ConversationMemoryRow,
+    CreditConsentRow,
     DiagnosisLogRow,
     MessageRow,
     ProcessedMessageRow,
@@ -643,5 +644,48 @@ class PostgresStorage:
 
         return await self._execute(operation)
 
+
+    # ------------------------------------------------------------------
+    # Taproot: loan-sharing consent (separate from onboarding consent)
+    # ------------------------------------------------------------------
+
+    async def credit_consent_grant(
+        self, wa_id: str, *, partner: str, purpose: str, version: str, language: str | None, channel: str
+    ) -> None:
+        async def operation(session: AsyncSession) -> None:
+            session.add(CreditConsentRow(wa_id=wa_id, partner=partner, purpose=purpose, version=version,
+                                         language=language, channel=channel))
+            await session.commit()
+
+        await self._execute(operation)
+
+    async def credit_consent_active(self, wa_id: str, partner: str) -> CreditConsentRow | None:
+        async def operation(session: AsyncSession) -> CreditConsentRow | None:
+            result = await session.execute(
+                select(CreditConsentRow)
+                .where(CreditConsentRow.wa_id == wa_id, CreditConsentRow.partner == partner,
+                       CreditConsentRow.revoked_at.is_(None))
+                .order_by(CreditConsentRow.granted_at.desc())
+                .limit(1)
+            )
+            return result.scalars().first()
+
+        return await self._execute(operation)
+
+    async def credit_consent_revoke(self, wa_id: str, partner: str) -> int:
+        """Revoke every active grant for this partner. Returns how many were revoked."""
+        from sqlalchemy import update
+
+        async def operation(session: AsyncSession) -> int:
+            result = await session.execute(
+                update(CreditConsentRow)
+                .where(CreditConsentRow.wa_id == wa_id, CreditConsentRow.partner == partner,
+                       CreditConsentRow.revoked_at.is_(None))
+                .values(revoked_at=func.now())
+            )
+            await session.commit()
+            return result.rowcount or 0
+
+        return await self._execute(operation)
 
 storage = PostgresStorage()
